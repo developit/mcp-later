@@ -1,0 +1,23 @@
+{
+  "name": "mcp-later",
+  "version": "0.1.0",
+  "description": "One command to make MCP Servers free until they are actually used.",
+  "bin": {
+    "mcp-later": "./mcp-later.sh"
+  },
+  "files": [
+    "mcp-later.sh"
+  ],
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/nicolo-ribaudo/mcpz"
+  },
+  "keywords": [
+    "mcp",
+    "model-context-protocol",
+    "proxy",
+    "cache",
+    "lazy"
+  ]
+}
