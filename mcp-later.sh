@@ -49,7 +49,7 @@ Example (Claude Code config):
     "mcpServers": {
       "browser-mcp": {
         "command": "mcp-later",
-        "args": ["npx", "@anthropic-ai/browser-mcp@latest"]
+        "args": ["npx", "@browsermcp/mcp@latest"]
       }
     }
   }
