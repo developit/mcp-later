@@ -112,6 +112,18 @@ echo "passthrough (lazy spawn)"
   assert_contains "tools/call has result" "$out" '"mock result"'
 
 echo ""
+echo "multiple tool calls (second call must not hang)"
+  # Pipe two tools/call requests and close stdin. Both should produce responses.
+  out=$(send \
+    "$INIT" \
+    "$INITIALIZED" \
+    '{"jsonrpc":"2.0","id":20,"method":"tools/call","params":{"name":"mock_tool","arguments":{}}}' \
+    '{"jsonrpc":"2.0","id":21,"method":"tools/call","params":{"name":"mock_tool","arguments":{}}}' \
+  )
+  assert_contains "first tools/call response" "$out" '"id":20,'
+  assert_contains "second tools/call response" "$out" '"id":21,'
+
+echo ""
 echo "cold cache (inline warmup)"
   rm -rf "$CACHE"/*
   out=$(send \
@@ -160,15 +172,19 @@ echo "signal handling"
   ) | MCP_LATER_CACHE_DIR="$CACHE" bash "$MCP_LATER" $MOCK > /dev/null 2>&1 &
   local_pid=$!
   sleep 1
-  kill -INT $local_pid 2>/dev/null
+  kill $local_pid 2>/dev/null
+  wait $local_pid 2>/dev/null || true
   sleep 1
-  if pgrep -f "mock-server.sh" > /dev/null 2>&1; then
+  # pgrep -f also matches ancestor processes whose cmdline contains "mock-server.sh"
+  # (the pipeline subshell, the test runner in some environments). Use pgrep -x to
+  # match only the actual mock-server.sh interpreter process.
+  if pgrep -xf "bash .*/mock-server.sh" > /dev/null 2>&1; then
     FAIL=$((FAIL + 1))
-    printf '  \033[31m✗\033[0m SIGINT cleans up server\n'
-    pkill -f "mock-server.sh" 2>/dev/null
+    printf '  \033[31m✗\033[0m SIGTERM cleans up server\n'
+    pkill -xf "bash .*/mock-server.sh" 2>/dev/null
   else
     PASS=$((PASS + 1))
-    printf '  \033[32m✓\033[0m SIGINT cleans up server\n'
+    printf '  \033[32m✓\033[0m SIGTERM cleans up server\n'
   fi
 
 # ── Summary ──────────────────────────────────────────────────────────

@@ -15,7 +15,8 @@ TMP=""
 
 cleanup() {
   trap - EXIT INT TERM
-  # Kill all background jobs (server, cat pipes, etc.)
+  # Kill the server process explicitly (jobs -p may miss it during wait).
+  [ -n "${SVR_PID:-}" ] && kill "$SVR_PID" 2>/dev/null
   kill $(jobs -p) 2>/dev/null || true
   wait 2>/dev/null || true
   [ -n "$TMP" ] && rm -rf "$TMP"
@@ -286,7 +287,7 @@ passthrough() {
   # Each closes the fd it doesn't use so the server gets proper EOF.
   cat <&4 3>&- &
   local bg_out=$!
-  cat >&3 4<&- &
+  cat <&0 >&3 4<&- &
   local bg_in=$!
   wait $bg_in 2>/dev/null || true
   exec 3>&-   # signal EOF to server stdin
