@@ -1,6 +1,6 @@
 {
   "name": "mcp-later",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "description": "One command to make MCP Servers free until they are actually used.",
   "bin": {
     "mcp-later": "./mcp-later.sh"
