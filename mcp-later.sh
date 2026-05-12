@@ -144,8 +144,28 @@ jresult() {
   }' <<< "$1"
 }
 
-# Check if a JSON-RPC response is an error.
-jerror() { [[ "$1" == *'"error"'* ]]; }
+# Check if a JSON-RPC response has a top-level "error" key.
+# Walks the JSON tracking depth so nested "error" strings (e.g. enum values
+# inside a tool's input schema) don't false-match.
+jerror() {
+  awk '{
+    d = 0; q = 0; esc = 0; ks = 0
+    for (j = 1; j <= length($0); j++) {
+      c = substr($0, j, 1)
+      if (esc) { esc = 0; continue }
+      if (c == "\\") { esc = 1; continue }
+      if (c == "\"") {
+        if (!q) { q = 1; if (d == 1) ks = j + 1 }
+        else { q = 0; if (ks && substr($0, ks, j - ks) == "error") exit 0; ks = 0 }
+        continue
+      }
+      if (q) continue
+      if (c == "{" || c == "[") d++
+      else if (c == "}" || c == "]") d--
+    }
+    exit 1
+  }' <<< "$1"
+}
 
 # ── Server I/O ───────────────────────────────────────────────────────
 start_server() {
