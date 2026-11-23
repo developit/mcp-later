@@ -152,6 +152,19 @@ echo "ping"
   assert_contains "ping response has correct id" "$out" '"id":77,'
 
 echo ""
+echo "server/discover probe (no server spawn)"
+  out=$(printf '%s\n' \
+    '{"jsonrpc":"2.0","id":"server-discover-probe-1","method":"server/discover","params":{}}' \
+    "$INIT" \
+    "$INITIALIZED" \
+    '{"jsonrpc":"2.0","id":10,"method":"tools/list","params":{}}' \
+    | MCP_LATER_CACHE_DIR="$CACHE" MCP_LATER_DEBUG=1 bash "$MCP_LATER" $MOCK 2>&1)
+  assert_contains "discover answered with method not found" "$out" '"id":"server-discover-probe-1","error":{"code":-32601'
+  assert_contains "init still served from cache" "$out" '"id":1,'
+  assert_contains "tools/list still served from cache" "$out" '"mock_tool"'
+  assert_not_contains "real server not spawned" "$out" "passthrough start"
+
+echo ""
 echo "help"
   help_out=$(bash "$MCP_LATER" --help 2>&1)
   assert_contains "--help shows usage" "$help_out" "Usage:"

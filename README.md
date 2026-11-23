@@ -60,7 +60,7 @@ mcp-later --warmup npx @browsermcp/mcp@latest
 
 ## How it works
 
-1. **Phase 1 (cached):** `mcp-later` responds to `initialize`, `tools/list`, `prompts/list`, and `resources/list` from disk cache. The real server is never started.
+1. **Phase 1 (cached):** `mcp-later` responds to `initialize`, `tools/list`, `prompts/list`, and `resources/list` from disk cache, and answers the `server/discover` probe of newer clients with "method not found" so they fall back to `initialize`. The real server is never started.
 
 2. **Phase 2 (passthrough):** When a non-cached request arrives (e.g., `tools/call`), the real server is spawned, the init handshake is replayed, and `mcp-later` becomes a transparent bidirectional pipe for the rest of the session.
 

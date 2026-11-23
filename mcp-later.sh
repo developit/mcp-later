@@ -346,6 +346,12 @@ while IFS= read -r line; do
     ping)
       jresp "$(jid "$line")" '{}'
       ;;
+    server/discover)
+      # Stateless discovery probe (MCP 2026-07-28 draft), sent by recent clients such as
+      # Claude Code before initialize. Answer like a server that only speaks initialize,
+      # so the client falls back to it without waking the real server.
+      printf '{"jsonrpc":"2.0","id":%s,"error":{"code":-32601,"message":"Method not found"}}\n' "$(jid "$line")"
+      ;;
     *)
       # Non-cacheable request: spawn the real server and hand off.
       passthrough "$line"
