@@ -171,7 +171,10 @@ jerror() {
 start_server() {
   TMP=$(mktemp -d)
   mkfifo "$TMP/in" "$TMP/out"
-  "${SERVER_CMD[@]}" < "$TMP/in" > "$TMP/out" &
+  # Give the server an anonymous pipe as stdin, not the FIFO itself.
+  # Node reads a FIFO stdin differently: after the first message it stops
+  # reading lines larger than ~8 KB, so a big request (and all after it) hangs.
+  cat "$TMP/in" | "${SERVER_CMD[@]}" > "$TMP/out" &
   SVR_PID=$!
   exec 3>"$TMP/in" 4<"$TMP/out"
   debug "server started pid=$SVR_PID"
