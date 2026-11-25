@@ -187,6 +187,31 @@ echo "signal handling"
     printf '  \033[32m✓\033[0m SIGTERM cleans up server\n'
   fi
 
+echo ""
+echo "large messages after passthrough (Node server)"
+if command -v node >/dev/null 2>&1; then
+  NODE_CACHE=$(mktemp -d)
+  BIG=$(printf 'x%.0s' $(seq 1 20000))
+  OUT=$(mktemp)
+  {
+    printf '%s\n' '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2024-11-05","capabilities":{},"clientInfo":{"name":"test","version":"1"}}}'
+    printf '%s\n' '{"jsonrpc":"2.0","method":"notifications/initialized"}'
+    printf '%s\n' '{"jsonrpc":"2.0","id":2,"method":"tools/call","params":{"name":"echo","arguments":{}}}'
+    sleep 1
+    printf '{"jsonrpc":"2.0","id":3,"method":"tools/call","params":{"name":"echo","arguments":{"text":"%s"}}}\n' "$BIG"
+    sleep 3
+  } | MCP_LATER_CACHE_DIR="$NODE_CACHE" bash "$MCP_LATER" node "$DIR/mock-server.js" > "$OUT" 2>/dev/null &
+  PIPE_PID=$!
+  # The bug made this hang forever, so wait at most 10 s.
+  for _ in $(seq 1 20); do grep -q '"id":3' "$OUT" && break; sleep 0.5; done
+  pkill -P "$PIPE_PID" 2>/dev/null; kill "$PIPE_PID" 2>/dev/null; wait "$PIPE_PID" 2>/dev/null
+  assert_contains "small request after spawn is answered" "$(cat "$OUT")" '"id":2'
+  assert_contains "20 KB request after spawn is answered" "$(cat "$OUT")" '"id":3'
+  rm -rf "$NODE_CACHE" "$OUT"
+else
+  echo "  (skipped: node not installed)"
+fi
+
 # ── Summary ──────────────────────────────────────────────────────────
 echo ""
 echo "──────────────────────────"
